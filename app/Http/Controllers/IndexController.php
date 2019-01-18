@@ -4,12 +4,17 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Thumb\Maker;
+use App;
 
 
 class IndexController extends Controller
 {
-    const WIDTH  = 300;
-    const HEIGHT = 300;
+
+    public function form()
+    {
+        return view('form');
+    }
+
 
 
     /**
@@ -29,11 +34,11 @@ class IndexController extends Controller
         }
 
         // Preview making.
-        $maker = new Maker($link, self::WIDTH, self::HEIGHT);
+        $maker = new Maker($link);
 
 
         try {
-            $path = $maker->getThumb();
+            $path = App::make('url')->to('/') . $maker->getThumb();
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,

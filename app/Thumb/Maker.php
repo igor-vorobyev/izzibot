@@ -18,37 +18,24 @@ class Maker
     const TYPE_IMAGE = 'IMAGE';
     const TYPE_VIDEO = 'VIDEO';
 
+    const MAX_WIDTH  = 400;
+    const MAX_HEIGHT = 400;
+
     const TIME_SCREENSHOT = 5;
 
     protected $link;
-    protected $width;
-    protected $height;
 
 
 
-    public function __construct(string $link, int $width, int $height)
+    public function __construct(string $link)
     {
         $this->link   = $link;
-        $this->width  = $width;
-        $this->height = $height;
     }
 
 
     public function getLink()
     {
         return $this->link;
-    }
-
-
-    public function getWidth()
-    {
-        return $this->width;
-    }
-
-
-    public function getHeight()
-    {
-        return $this->height;
     }
 
 
@@ -132,16 +119,18 @@ class Maker
                 throw new \Exception("Can't create thumbnail from video.");
             }
 
+            $sizes   = self::getSizes($path_thumb);
             $manager = new ImageManager(['driver' => 'imagick']);
-            $image   = $manager->make($path_thumb)->resize($this->getWidth(), $this->getheight());
+            $image   = $manager->make($path_origin)->resize($sizes['width'], $sizes['height']);
+
 
             // Save thumbnail to storage.
             $image->save($path_thumb);
 
         } else {
-
+            $sizes   = self::getSizes($path_origin);
             $manager = new ImageManager(['driver' => 'imagick']);
-            $image   = $manager->make($path_origin)->resize($this->getWidth(), $this->getheight());
+            $image   = $manager->make($path_origin)->resize($sizes['width'], $sizes['height']);
 
             // Save thumbnail to storage.
             $image->save($path_thumb);
@@ -151,9 +140,35 @@ class Maker
         // Save to database.
         $thumb = new Thumb();
         $thumb->hash = $filename;
-        $thumb->path = $path_thumb;
+        $thumb->path = Storage::url('public/thumbs/' . $filename);
         $thumb->save();
 
         return Storage::url('public/thumbs/' . $filename);
+   }
+
+
+   protected static function getSizes($path)
+   {
+       list($width, $height) = getimagesize($path);
+
+       if ($width > $height) {
+            if ($width > self::MAX_WIDTH) {
+                $height = (int) $height / $width * self::MAX_WIDTH;
+                $width  = self::MAX_WIDTH;
+            } else {
+                $width  = (int) $width / $height * self::MAX_HEIGHT;
+                $height = self::MAX_HEIGHT;
+            }
+       } else {
+           if ($height > self::MAX_HEIGHT) {
+               $width  = (int) $width / $height * self::MAX_HEIGHT;
+               $height = self::MAX_HEIGHT;
+           } else {
+               $height = (int) $height / $width * self::MAX_WIDTH;
+               $width  = self::MAX_WIDTH;
+            }
+       }
+
+       return ['width' => $width, 'height' => $height];
    }
 }

@@ -16,3 +16,5 @@ Route::get('/', function () {
 });
 
 Route::any('/thumb/', 'IndexController@thumb');
+
+Route::get('/form/', 'IndexController@form');
