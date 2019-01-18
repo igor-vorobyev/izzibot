@@ -80,7 +80,7 @@ class Maker
         $fileext  = strtolower(pathinfo($this->link, PATHINFO_EXTENSION));
 
         if ($this->getType() == self::TYPE_VIDEO) {
-            $fileext = 'png';
+            $fileext = 'jpg';
         }
         $filename = sha1($this->link) . '.' . $fileext;
 
@@ -121,7 +121,7 @@ class Maker
 
             $sizes   = self::getSizes($path_thumb);
             $manager = new ImageManager(['driver' => 'imagick']);
-            $image   = $manager->make($path_origin)->resize($sizes['width'], $sizes['height']);
+            $image   = $manager->make($path_thumb)->resize($sizes['width'], $sizes['height']);
 
 
             // Save thumbnail to storage.
