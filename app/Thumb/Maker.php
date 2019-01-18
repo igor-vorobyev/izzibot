@@ -18,6 +18,8 @@ class Maker
     const TYPE_IMAGE = 'IMAGE';
     const TYPE_VIDEO = 'VIDEO';
 
+    const QUALITY = 65;
+
     const MAX_WIDTH  = 400;
     const MAX_HEIGHT = 400;
 
@@ -62,7 +64,7 @@ class Maker
      */
     public function getThumb() : string
     {
-        $thumb = Thumb::where('hash', '=', $this->getHashName())->first();
+        $thumb = null;//Thumb::where('hash', '=', $this->getHashName())->first();
 
         if (!empty($thumb)) {
             $path = $thumb->path;
@@ -137,6 +139,9 @@ class Maker
         }
 
 
+        $this->compress($path_thumb, $path_thumb, self::QUALITY);
+
+
         // Save to database.
         $thumb = new Thumb();
         $thumb->hash = $filename;
@@ -145,6 +150,19 @@ class Maker
 
         return Storage::url('public/thumbs/' . $filename);
    }
+
+
+    protected function compress($source, $output, $quality)
+    {
+        $info = getimagesize($source);
+
+        if ($info['mime'] == 'image/jpeg') {
+            $image = imagecreatefromjpeg($source);
+        }
+        imagejpeg($image, $output, $quality);
+
+        return $output;
+    }
 
 
    protected static function getSizes($path)
@@ -172,3 +190,7 @@ class Maker
        return ['width' => $width, 'height' => $height];
    }
 }
+
+
+
+
