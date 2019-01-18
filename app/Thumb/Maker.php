@@ -2,7 +2,10 @@
 
 namespace App\Thumb;
 
+use Exception;
 use Thumbnail;
+use Intervention\Image\ImageManager;
+use App\Thumb;
 use Illuminate\Http\File;
 use Illuminate\Support\Facades\Storage;
 
@@ -14,6 +17,8 @@ class Maker
 
     const TYPE_IMAGE = 'IMAGE';
     const TYPE_VIDEO = 'VIDEO';
+
+    const TIME_SCREENSHOT = 5;
 
     protected $link;
     protected $width;
@@ -59,46 +64,96 @@ class Maker
             return self::TYPE_VIDEO;
         }
 
-        return self::TYPE_IMAGE;
+        throw new Exception("Unknown format");
     }
 
 
     /**
-     * Making thumbnail.
+     * Getting thumbnail.
      *
      * @return string
      */
     public function getThumb() : string
     {
-        if (0) {
+        $thumb = Thumb::where('hash', '=', $this->getHashName())->first();
 
+        if (!empty($thumb)) {
+            $path = $thumb->path;
+        } else {
+            $path = $this->make();
         }
-        $path = $this->make();
-
         return $path;
     }
 
 
-    protected function make()
+
+    public function getHashName()
     {
         // Make filename.
         $fileext  = strtolower(pathinfo($this->link, PATHINFO_EXTENSION));
+
+        if ($this->getType() == self::TYPE_VIDEO) {
+            $fileext = 'png';
+        }
         $filename = sha1($this->link) . '.' . $fileext;
 
-        // Get content.
-        $content = file_get_contents($this->link);
+        return $filename;
+    }
+
+
+    /**
+     * Making thumbail.
+     *
+     * @return string
+     */
+    protected function make()
+    {
+        $filename = $this->getHashName();
+
+        // Paths.
+        $path_origin = Storage::path('public/origins/' . $filename);
+        $path_thumb  = Storage::path('public/thumbs/' . $filename);
+
+
+        // Save origin to storage.
+        copy($this->link, $path_origin);
 
 
         // Make thumbnail.
+        if ($this->getType() == self::TYPE_VIDEO) {
+
+            $status = Thumbnail::getThumbnail(
+                $path_origin,
+                Storage::path('public/thumbs/'),
+                $filename,
+                self::TIME_SCREENSHOT
+            );
+            if (!$status) {
+                throw new \Exception("Can't create thumbnail from video.");
+            }
+
+            $manager = new ImageManager(['driver' => 'imagick']);
+            $image   = $manager->make($path_thumb)->resize($this->getWidth(), $this->getheight());
+
+            // Save thumbnail to storage.
+            $image->save($path_thumb);
+
+        } else {
+
+            $manager = new ImageManager(['driver' => 'imagick']);
+            $image   = $manager->make($path_origin)->resize($this->getWidth(), $this->getheight());
+
+            // Save thumbnail to storage.
+            $image->save($path_thumb);
+        }
 
 
-        // Save thumbnail to storage.
-        Storage::put('thumbs/' . $filename, $content);
-
-        
         // Save to database.
+        $thumb = new Thumb();
+        $thumb->hash = $filename;
+        $thumb->path = $path_thumb;
+        $thumb->save();
 
-
-        return $filename;
+        return Storage::url('public/thumbs/' . $filename);
    }
 }
