@@ -77,7 +77,7 @@ class Maker
     public function getHashName()
     {
         // Make filename.
-        $fileext  = strtolower(pathinfo($this->link, PATHINFO_EXTENSION));
+        $fileext  = 'jpg'; // strtolower(pathinfo($this->link, PATHINFO_EXTENSION));
 
         if ($this->getType() == self::TYPE_VIDEO) {
             $fileext = 'jpg';
